@@ -2,6 +2,27 @@
 An API for generating screenshots for any website
 
 
+Idea
+----
+https://developers.google.com/web/updates/2017/04/headless-chrome
+via https://news.ycombinator.com/item?id=14239194
+
+I can be useful if we use js or python, if ruby I can only be marginally helpful.
+
+
+example request:
+
+    HTTP POST  /api/webscreehsot/
+    { "website_url":"https://www.nytimes.com/",
+      "window_width": 1048,
+      "window_height": 768 }
+
+response:
+
+    { "status": "success",
+      "screenshot_url": "http://bucket.s3-aws-region.amazonaws.com/nytimes/scrrenshot20170502.png" }
+
+
 Setup
 -----
 
