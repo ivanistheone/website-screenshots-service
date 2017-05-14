@@ -1,10 +1,15 @@
+#!/usr/bin/env python3
+
 import boto3
+from botocore.client import Config
 from datetime import datetime
-from flask import Flask, jsonify
+from flask import Flask, jsonify, request
 import os
+from slugify import slugify
 import subprocess
 import sys
-from urlparse import urlparse
+from urllib.parse import urlparse
+
 
 
 # Load credentials from environment variables
@@ -18,6 +23,7 @@ AWS_ACCESS_KEY_ID = os.environ['AWS_ACCESS_KEY_ID']
 AWS_SECRET_ACCESS_KEY = os.environ['AWS_SECRET_ACCESS_KEY']
 
 S3_SCREENSHOTS_BUCKET_NAME = 'web-screenshot-service'
+S3_SCREENSHOTS_BUCKET_BASE_URL = 'https://s3.ca-central-1.amazonaws.com/web-screenshot-service/'
 
 
 app = Flask(__name__)
@@ -28,12 +34,12 @@ def hello_world():
     return 'Flask Dockerized'
 
 
-@app.route('/api/webscreehsot/', methods=['POST']))
+@app.route('/api/webscreehsot/', methods=['POST'])
 def web_screenshot():
     """
     Expects HTTP POST requests with JSON pauload of the form:
 
-        { "website_url":"https://www.nytimes.com/",
+        { "website_url": "https://www.nytimes.com/",
           "window_width": 1048,
           "window_height": 768 }
     
@@ -45,48 +51,59 @@ def web_screenshot():
     """
     data = request.get_json()
     print('received POST data', data)
-    website_url = data['uwebsite_urlrl']
+    website_url = data['website_url']
     screenshot_width = data.get('window_width', 1048)
     screenshot_height =  data.get('window_height', 768)
     #
     #
-    # Prepare screenshot name and containing folder
+    # Prepare containing folder, subfolder, and screenshot name with timestamp
     parsed_uri = urlparse(website_url)
     domain = parsed_uri.netloc
-    screenshot_dir = domain.replace('.', '_')
-    screenshot_name = 'screenshot' + datetime.now().strftime('%Y%M%d_%H%M') + '.png'
+    screenshot_dir = domain.replace('.', '_')     # www_nytimes_com
+    subdir = slugify(str(parsed_uri.path.lstrip('/'))) # 2017_05_13_worl...ariclehtml
+    screenshot_name = 'screenshot' + datetime.now().strftime('%Y%M%d_%H%M%S') + '.png'
+    if subdir:
+        screenshot_path = screenshot_dir + '/' + subdir + '/' + screenshot_name
+    else:
+        screenshot_path = screenshot_dir + '/' + screenshot_name
     #
     #
     # A. Generate screenshot
     cmd_template =  'chromium-browser --headless --disable-gpu --screenshot '
     cmd_template += '--window-size={window_width},{window_height} {website_url}'
-    cmd = cmd_template.format(window_width=window_width,
-                              window_height=window_height,
+    cmd = cmd_template.format(window_width=screenshot_width,
+                              window_height=screenshot_height,
                               website_url=website_url)
-    chrome_process = subprocess.Popen(cmd, stdout=sp.PIPE)
-    chrome_process.wait()
-    print(chrome_process.returncode)
+    print('running:', cmd)
+    # chrome_process = subprocess.Popen(cmd, stdout=sp.PIPE)
+    # chrome_process.wait()
+    # print(chrome_process.returncode)
     # TODO: handle error case
     #
     # B. Upload to s3
     client = boto3.client(
         's3',
-        aws_access_key_id=ACCESS_KEY,
-        aws_secret_access_key=SECRET_KEY,
+        aws_access_key_id=AWS_ACCESS_KEY_ID,
+        aws_secret_access_key=AWS_SECRET_ACCESS_KEY,
+        config=Config(signature_version='s3v4')
     )
     screenshot_file = open('screenshot.png', 'rb')
     aws_resp = client.put_object(
         ACL = 'public-read',
         Bucket = S3_SCREENSHOTS_BUCKET_NAME,
-        Key = screenshot_dir + '/' + screenshot_name,
+        Key = screenshot_path,
         Body = screenshot_file)
     print(aws_resp)
-    s3_url = 'asas'
-    #
+    resp_status = aws_resp['ResponseMetadata']['HTTPStatusCode']
     #
     # C. Return screenshot url
-    return jsonify({"status": "success",
-                    "screenshot_url": s3_url})
+    if resp_status == 200:
+        s3_url = S3_SCREENSHOTS_BUCKET_BASE_URL + screenshot_path
+        return jsonify({"status": "success",
+                        "screenshot_url": s3_url})
+    else:
+        return jsonify({"status": "error",
+                        "message": "Uploading to s3 failed"})
 
 
 if __name__ == '__main__':
