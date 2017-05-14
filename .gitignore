@@ -1,3 +1,6 @@
+# dev virtualenv
+.pydev
+
 # Credentials
 credentials/s3-user.env
 

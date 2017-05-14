@@ -5,14 +5,14 @@ from botocore.client import Config
 from datetime import datetime
 from flask import Flask, jsonify, request
 import os
+import shutil
 from slugify import slugify
 import subprocess
 import sys
 from urllib.parse import urlparse
 
 
-
-# Load credentials from environment variables
+# Require credentials from environment variables
 if 'AWS_ACCESS_KEY_ID' not in os.environ:
     print('Missing environment variable AWS_ACCESS_KEY_ID')
     sys.exit(1)
@@ -25,6 +25,7 @@ AWS_SECRET_ACCESS_KEY = os.environ['AWS_SECRET_ACCESS_KEY']
 S3_SCREENSHOTS_BUCKET_NAME = 'web-screenshot-service'
 S3_SCREENSHOTS_BUCKET_BASE_URL = 'https://s3.ca-central-1.amazonaws.com/web-screenshot-service/'
 
+WORKDIR = os.getcwd()
 
 app = Flask(__name__)
 
@@ -63,22 +64,30 @@ def web_screenshot():
     subdir = slugify(str(parsed_uri.path.lstrip('/'))) # 2017_05_13_worl...ariclehtml
     screenshot_name = 'screenshot' + datetime.now().strftime('%Y%M%d_%H%M%S') + '.png'
     if subdir:
-        screenshot_path = screenshot_dir + '/' + subdir + '/' + screenshot_name
-    else:
-        screenshot_path = screenshot_dir + '/' + screenshot_name
+        screenshot_dir = screenshot_dir + '/' + subdir
+    destination_path  = screenshot_dir + '/' + screenshot_name
     #
     #
     # A. Generate screenshot
-    cmd_template =  'chromium-browser --headless --disable-gpu --screenshot '
-    cmd_template += '--window-size={window_width},{window_height} {website_url}'
+    tmp_dir = os.path.join('/tmp', screenshot_dir)
+    if not os.path.exists(tmp_dir):
+        os.makedirs(tmp_dir)
+    os.chdir(tmp_dir)
+    cmd_template =  'chromium-browser --headless --disable-gpu --no-sandbox '
+    cmd_template += '--screenshot --hide-scrollbars '
+    cmd_template += '--window-size={window_width},{window_height} {website_url} '
     cmd = cmd_template.format(window_width=screenshot_width,
                               window_height=screenshot_height,
                               website_url=website_url)
     print('running:', cmd)
-    # chrome_process = subprocess.Popen(cmd, stdout=sp.PIPE)
-    # chrome_process.wait()
-    # print(chrome_process.returncode)
-    # TODO: handle error case
+    chrome_process = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE)
+    chrome_process.wait()
+    print(chrome_process.returncode)
+    os.chdir(WORKDIR)
+    screenshot_tmp_path = tmp_dir + '/screenshot.png'
+    if not os.path.exists(screenshot_tmp_path):              # handle error case
+        return jsonify({"status": "error",
+                        "message": "Chrome failed to generate screnshot."})
     #
     # B. Upload to s3
     client = boto3.client(
@@ -87,18 +96,21 @@ def web_screenshot():
         aws_secret_access_key=AWS_SECRET_ACCESS_KEY,
         config=Config(signature_version='s3v4')
     )
-    screenshot_file = open('screenshot.png', 'rb')
+    screenshot_file = open(screenshot_tmp_path, 'rb')
     aws_resp = client.put_object(
         ACL = 'public-read',
         Bucket = S3_SCREENSHOTS_BUCKET_NAME,
-        Key = screenshot_path,
+        Key = destination_path,
         Body = screenshot_file)
     print(aws_resp)
     resp_status = aws_resp['ResponseMetadata']['HTTPStatusCode']
     #
-    # C. Return screenshot url
+    # C. Remove local screenshot tmp file and containing dir
+    shutil.rmtree(tmp_dir)
+    #
+    #
     if resp_status == 200:
-        s3_url = S3_SCREENSHOTS_BUCKET_BASE_URL + screenshot_path
+        s3_url = S3_SCREENSHOTS_BUCKET_BASE_URL + destination_path
         return jsonify({"status": "success",
                         "screenshot_url": s3_url})
     else:

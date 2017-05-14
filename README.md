@@ -1,14 +1,24 @@
-# website-screenshots-service
+Website Screenshots Service
+===========================
 An API for generating screenshots for any website
+
+
+TODO
+----
+
+  - Change to accept HTTP GET
+  - Change url param names
+  - Resize image using PIL, see http://pillow.readthedocs.io/en/3.1.x/reference/Image.html#PIL.Image.Image.resize
+  - Return 302 to actual image instead of json
+  - Deploy on docker-machine
+    - ENV vars?
+  - Deploy to `miniref-web1`
+
 
 
 Idea
 ----
-https://developers.google.com/web/updates/2017/04/headless-chrome
-via https://news.ycombinator.com/item?id=14239194
-
-I can be useful if we use js or python, if ruby I can only be marginally helpful.
-
+We want a service to generate website screenshots of any website or url.
 
 example request:
 
@@ -25,26 +35,30 @@ response:
 
 Setup
 -----
-
 Build the docker image from the `Dockerfile` run
 
-    docker build . --tag basicsvc2
+    docker build . --tag basicsvc5
 
 To get a debugging/dev shell inside the container, run
 
     docker run \
-      --cap-add SYS_ADMIN \
       -v $(pwd):/webapp \
       -p 5000:5000 \
-      -it  basicsvc2 /bin/bash
+      -e AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID \
+      -e AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY \
+      -it basicsvc5 /bin/bash
 
-Once inside the container you can generate a scneeshot using:
 
-    chromium-browser --headless --disable-gpu --screenshot --window-size=1280,768 https://github.com/seanttaylor/biblio
 
-then start a webserver 
+Production
+----------
 
-    python3 -m http.server  5000
-    
-open your browser to http://localhost:5000 and find that screenshot!
+    docker run \
+      -p 5000:5000 \
+      -e AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID \
+      -e AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY \
+      -d basicsvc5
+
+This will run the entry CMD `python3 screenshotservice.py` to start the service.
+
 
