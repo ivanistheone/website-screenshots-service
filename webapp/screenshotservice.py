@@ -13,17 +13,17 @@ from urllib.parse import urlparse
 
 
 # Require credentials from environment variables
-if 'AWS_ACCESS_KEY_ID' not in os.environ:
+if 'S3_AWS_ACCESS_KEY_ID' not in os.environ:
     print('Missing environment variable AWS_ACCESS_KEY_ID')
     sys.exit(1)
-if 'AWS_SECRET_ACCESS_KEY' not in os.environ:
+if 'S3_AWS_SECRET_ACCESS_KEY' not in os.environ:
     print('Missing environment variable AWS_SECRET_ACCESS_KEY')
     sys.exit(1)
-AWS_ACCESS_KEY_ID = os.environ['AWS_ACCESS_KEY_ID']
-AWS_SECRET_ACCESS_KEY = os.environ['AWS_SECRET_ACCESS_KEY']
+S3_AWS_ACCESS_KEY_ID = os.environ['S3_AWS_ACCESS_KEY_ID']
+S3_AWS_SECRET_ACCESS_KEY = os.environ['S3_AWS_SECRET_ACCESS_KEY']
 
-S3_SCREENSHOTS_BUCKET_NAME = 'web-screenshot-service'
-S3_SCREENSHOTS_BUCKET_BASE_URL = 'https://s3.ca-central-1.amazonaws.com/web-screenshot-service/'
+S3_BUCKET_NAME = 'web-screenshot-service'
+S3_BUCKET_BASE_URL = 'https://s3.ca-central-1.amazonaws.com/web-screenshot-service/'
 
 WORKDIR = os.getcwd()
 
@@ -92,8 +92,8 @@ def web_screenshot():
     # B. Upload to s3
     client = boto3.client(
         's3',
-        aws_access_key_id=AWS_ACCESS_KEY_ID,
-        aws_secret_access_key=AWS_SECRET_ACCESS_KEY,
+        aws_access_key_id=S3_AWS_ACCESS_KEY_ID,
+        aws_secret_access_key=S3_AWS_SECRET_ACCESS_KEY,
         config=Config(signature_version='s3v4')
     )
     screenshot_file = open(screenshot_tmp_path, 'rb')

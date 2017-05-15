@@ -2,7 +2,7 @@
 .pydev
 
 # Credentials
-credentials/s3-user.env
+credentials/
 
 
 # Byte-compiled / optimized / DLL files

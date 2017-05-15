@@ -17,7 +17,7 @@ RUN apt-get install -y chromium-browser
 
 # Install python app & depends
 RUN apt-get install -y python3-pip python3-dev build-essential
-COPY . /webapp
+COPY webapp /webapp
 RUN cd /webapp \
   && pip3 install -r requirements.txt
 
