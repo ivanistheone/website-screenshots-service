@@ -1,6 +1,7 @@
 Website Screenshots Service
 ===========================
-An API for generating screenshots for any website
+A JSON API for generating screenshots for any website.
+
 
 
 TODO
@@ -10,8 +11,6 @@ TODO
   - Change url param names
   - Resize image using PIL, see http://pillow.readthedocs.io/en/3.1.x/reference/Image.html#PIL.Image.Image.resize
   - Return 302 to actual image instead of json
-  - Deploy on docker-machine
-    - ENV vars?
   - Deploy to `miniref-web1`
 
 
@@ -41,7 +40,8 @@ being available as environment variables.
 
 Credentials for a user with full `s3` read/write access, available as:
 
-    S3_AWS_ACCESS_KEY_ID  and     S3_AWS_SECRET_ACCESS_KEY
+    S3_AWS_ACCESS_KEY_ID
+    S3_AWS_SECRET_ACCESS_KEY
 
 See step-by-step screenshots in `docs/aws_steps/create_s3_user/`.
 
@@ -80,7 +80,7 @@ Running locally
 ---------------
 Build the docker image from the `Dockerfile` run
 
-    docker build . --tag screenshot-docker-img
+    docker build webapp/  --tag screenshot-docker-img
 
 To get a debugging/dev shell inside the container, run
 
@@ -94,7 +94,9 @@ To get a debugging/dev shell inside the container, run
       -it screenshot-docker-img  /bin/bash
 
 
-Once inside the container, `cd /webapp` then run `python3 screenshotservice.py`.
+Once inside the container, `cd /webapp` then run `python3 screenshotservice.py` to start the
+service in developer mode. The above command maps the local directory `webapp` to the directory
+`/webapp` inside the container so you can use your usual dev tools to edit the code.
 
 
 
@@ -112,18 +114,36 @@ Use `docker-machine` to setup a docker host called `awsdhost` in the AWS cloud
 
     docker-machine create -d amazonec2 \
         --amazonec2-region ca-central-1 \
-        --amazonec2-zone b \    
         awsdhost
 
 Note this command depends on the env variables `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY`
 for the `docker-machine-user` IAM role being present in the environment.
 Use the `--amazonec2-region` option `us-east-1` to provision a host close to NYC.
 
-Assuming everything goes to plan, a new `t1.micro` instance should be running,
-with docker installed on it and the docker daemon listening on port `2375`.
+The above command will do "magically" all the work of setting up a basic linux box
+and installing docker on it (that's why it takes 5-10 minutes):
 
-The settings required to configure docker to build and deploy containers can be
-displayed using the command:
+    Creating machine...
+    (awsdhost) Launching instance...
+    Waiting for machine to be running, this may take a few minutes...
+    Detecting operating system of created instance...
+    Waiting for SSH to be available...
+    Detecting the provisioner...
+    Provisioning with ubuntu(systemd)...
+    Installing Docker...
+    Copying certs to the local machine directory...
+    Copying certs to the remote machine...
+    Setting Docker configuration on the remote daemon...
+    Checking connection to Docker...
+    Docker is up and running!
+    To see how to connect your Docker Client to the Docker Engine running on this virtual machine,
+    run: docker-machine env awsdhost
+
+Assuming everything goes to plan, a new `t1.micro` instance should be running, with docker
+installed on it and the docker daemon listening on port `2375`.
+
+The settings required to configure docker to build and deploy containers can be displayed using
+the command:
 
       docker-machine env awsdhost
 
@@ -135,11 +155,11 @@ In order to configure docker to build and run containers on `awsdhost`, we must
 inject the appropriate env variables which will tell the local docker command
 where it should work:
 
-      eval $(docker-machine env awsdhost)
+    eval $(docker-machine env awsdhost)
 
 After running this command we must build the docker image on `awshost`:
 
-    docker build . --tag screenshot-docker-img
+    docker build webapp/  --tag screenshot-docker-img
 
 Before we run the container, make sure the env contains the S3 credentials by
 running `source credentials/aws-keys.env` if needed.
@@ -160,12 +180,11 @@ Make sure `S3_BUCKET_NAME` and `S3_BUCKET_BASE_URL` are set appropriately.
 This will run the entry CMD `python3 screenshotservice.py` to start the service.
 
 
+
 ### Open port 5000
 
 May be necessary to go to security rules for the instance (default security group)
 and allow access to port 5000.
-
-
 
 
 
