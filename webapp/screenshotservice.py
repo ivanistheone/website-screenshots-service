@@ -99,9 +99,10 @@ def web_screenshot():
     screenshot_file = open(screenshot_tmp_path, 'rb')
     aws_resp = client.put_object(
         ACL = 'public-read',
-        Bucket = S3_SCREENSHOTS_BUCKET_NAME,
+        Bucket = S3_BUCKET_NAME,
         Key = destination_path,
-        Body = screenshot_file)
+        Body = screenshot_file,
+        ContentType = 'image/png')
     print(aws_resp)
     resp_status = aws_resp['ResponseMetadata']['HTTPStatusCode']
     #
@@ -110,7 +111,7 @@ def web_screenshot():
     #
     #
     if resp_status == 200:
-        s3_url = S3_SCREENSHOTS_BUCKET_BASE_URL + destination_path
+        s3_url = S3_BUCKET_BASE_URL + destination_path
         return jsonify({"status": "success",
                         "screenshot_url": s3_url})
     else:

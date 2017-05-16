@@ -3,15 +3,10 @@ Website Screenshots Service
 A JSON API for generating screenshots for any website.
 
 
-
 TODO
 ----
-
-  - Change to accept HTTP GET
-  - Change url param names
   - Resize image using PIL, see http://pillow.readthedocs.io/en/3.1.x/reference/Image.html#PIL.Image.Image.resize
-  - Return 302 to actual image instead of json
-  - Deploy to `miniref-web1`
+  - Deploy to `miniref-web1` https://docs.docker.com/engine/installation/linux/debian/#install-using-the-repository
 
 
 
@@ -110,7 +105,8 @@ We'll use the command line tool `docker-machine` for the following two tasks:
 
 ### Creating the docker host on AWS
 
-Use `docker-machine` to setup a docker host called `awsdhost` in the AWS cloud
+Use `docker-machine`'s [AWS driver](https://docs.docker.com/machine/drivers/aws/)
+to setup a docker host called `awsdhost` in the AWS cloud
 
     docker-machine create -d amazonec2 \
         --amazonec2-region ca-central-1 \
@@ -183,8 +179,24 @@ This will run the entry CMD `python3 screenshotservice.py` to start the service.
 
 ### Open port 5000
 
-May be necessary to go to security rules for the instance (default security group)
-and allow access to port 5000.
+From the ec2 web interface, choose "NETWORK & SECURITY" from the side menu, then
+"Security Groups", and click on the security group called "docker-machine".
+
+In the bottom panel, select "Inbound" then "Edit" and add a custom TCP rule for
+port 5000 coming from anywhere (`0.0.0.0/0`).
+
+
+### Find ec2 host's public IP and test API
+
+    docker-machine ip awsdhost
+    52.31.55.11
+
+Then sent a POST request to `http://52.31.55.11:5000/api/webscreehsot/` with, e.g.:
+
+    { "website_url":"http://google.com/",
+      "window_width": 1048,
+      "window_height": 768 }
+
 
 
 
