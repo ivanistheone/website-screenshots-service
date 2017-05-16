@@ -40,8 +40,10 @@ Credentials for a user with full `s3` read/write access, available as:
 
 See step-by-step screenshots in `docs/aws_steps/create_s3_user/`.
 
-Credentials with [full `ec2` and `VPC` access](docs/docker_machine_user_IAM_policy.txt)
-for use by docker machine, provided as the environment variables
+Credentials for a user with full `ec2` and `VPC` access for use by docker machine.
+When creating this user, use the following [custom policy](docs/docker_machine_user_IAM_policy.txt),
+by filling in the region (e.g. `us-east-1` and account id (numeric id associated with AWS account).
+These credentials must be provided as the environment variables:
 
     AWS_ACCESS_KEY_ID
     AWS_SECRET_ACCESS_KEY
@@ -182,8 +184,12 @@ This will run the entry CMD `python3 screenshotservice.py` to start the service.
 From the ec2 web interface, choose "NETWORK & SECURITY" from the side menu, then
 "Security Groups", and click on the security group called "docker-machine".
 
+![docs/aws_steps/open_port_5000/step1.png](docs/aws_steps/open_port_5000/step1.png)
+
 In the bottom panel, select "Inbound" then "Edit" and add a custom TCP rule for
 port 5000 coming from anywhere (`0.0.0.0/0`).
+
+![docs/aws_steps/open_port_5000/step2.png](docs/aws_steps/open_port_5000/step2.png)
 
 
 
