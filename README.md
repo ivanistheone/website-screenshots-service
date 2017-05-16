@@ -102,8 +102,9 @@ Running in production
 We'll use the command line tool `docker-machine` for the following two tasks:
   - Provision an `ec2` instance (a virtual machine rented from AWS) which will
     serve as the docker host
-  - Confiture 
-  
+  - Set appropriate environment variables to make `docker` command line tools
+    talk to the remote docker host instead of localhost
+
 
 ### Creating the docker host on AWS
 
@@ -137,17 +138,19 @@ and installing docker on it (that's why it takes 5-10 minutes):
     To see how to connect your Docker Client to the Docker Engine running on this virtual machine,
     run: docker-machine env awsdhost
 
-Assuming everything goes to plan, a new `t1.micro` instance should be running, with docker
-installed on it and the docker daemon listening on port `2375`.
+Assuming everything goes to plan, a new `t1.micro` instance should be running,
+with docker installed on it and the docker daemon listening on port `2375`.
+The security of the connection to the remote docker daemon is established by the
+TLS certificates in `~/.docker/machine/machines/awsdhost/`.
 
-The settings required to configure docker to build and deploy containers can be displayed using
-the command:
+The settings required to configure docker to build and deploy containers on the
+remote host `awsdhost` can be displayed using the command:
 
       docker-machine env awsdhost
 
 
 
-### Using docker on the dockerhost
+### Using docker on the remote docker host
 
 In order to configure docker to build and run containers on `awsdhost`, we must
 inject the appropriate env variables which will tell the local docker command
