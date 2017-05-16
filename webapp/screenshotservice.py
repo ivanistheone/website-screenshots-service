@@ -12,18 +12,18 @@ import sys
 from urllib.parse import urlparse
 
 
-# Require credentials from environment variables
-if 'S3_AWS_ACCESS_KEY_ID' not in os.environ:
-    print('Missing environment variable AWS_ACCESS_KEY_ID')
-    sys.exit(1)
-if 'S3_AWS_SECRET_ACCESS_KEY' not in os.environ:
-    print('Missing environment variable AWS_SECRET_ACCESS_KEY')
-    sys.exit(1)
-S3_AWS_ACCESS_KEY_ID = os.environ['S3_AWS_ACCESS_KEY_ID']
-S3_AWS_SECRET_ACCESS_KEY = os.environ['S3_AWS_SECRET_ACCESS_KEY']
+# Helper function to pull credentials and settings from environment variables
+def get_env_or_bust(envvar):
+    if envvar not in os.environ:
+        print('Missing environment variable AWS_ACCESS_KEY_ID')
+        sys.exit(1)
+    else:
+        return os.environ[envvar]
 
-S3_BUCKET_NAME = 'web-screenshot-service'
-S3_BUCKET_BASE_URL = 'https://s3.ca-central-1.amazonaws.com/web-screenshot-service/'
+S3_AWS_ACCESS_KEY_ID = get_env_or_bust('S3_AWS_ACCESS_KEY_ID')
+S3_AWS_SECRET_ACCESS_KEY = get_env_or_bust('S3_AWS_SECRET_ACCESS_KEY')
+S3_BUCKET_NAME = get_env_or_bust('S3_BUCKET_NAME')
+S3_BUCKET_BASE_URL = get_env_or_bust('S3_BUCKET_BASE_URL')
 
 WORKDIR = os.getcwd()
 

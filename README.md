@@ -186,6 +186,7 @@ In the bottom panel, select "Inbound" then "Edit" and add a custom TCP rule for
 port 5000 coming from anywhere (`0.0.0.0/0`).
 
 
+
 ### Find ec2 host's public IP and test API
 
     docker-machine ip awsdhost
@@ -198,6 +199,22 @@ Then sent a POST request to `http://52.31.55.11:5000/api/webscreehsot/` with, e.
       "window_height": 768 }
 
 
+
+Deploy new version
+------------------
+
+    source credentials/aws-keys.env
+    eval $(docker-machine env awsdhost)
+    docker ps                      # to find the container ID
+    docker stop <container_id>
+    docker build webapp/  --tag screenshot-docker-img
+    docker run \
+      -p 5000:5000 \
+      -e S3_AWS_ACCESS_KEY_ID=$S3_AWS_ACCESS_KEY_ID \
+      -e S3_AWS_SECRET_ACCESS_KEY=$S3_AWS_SECRET_ACCESS_KEY \
+      -e S3_BUCKET_NAME="web-screenshot-service" \
+      -e S3_BUCKET_BASE_URL="https://s3.ca-central-1.amazonaws.com/web-screenshot-service/" \
+      -d screenshot-docker-img
 
 
 Shutting down
